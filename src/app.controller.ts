@@ -1,22 +1,33 @@
-import {Body, Controller, Get, Param, ParseIntPipe, Post, Redirect} from '@nestjs/common';
-import { AppService } from './app.service';
-import {articles} from "./articles";
-import { Render } from "@nestjs/common";
-import {Article} from "./article.model";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Redirect,
+  Render,
+} from '@nestjs/common';
+import { Article } from './article.model';
 
 @Controller()
 export class AppController {
-
   @Get()
   @Render('index')
-  index() {
-    return { articles };
+  async index() {
+    return {
+      posts: await Article.find(),
+    };
   }
-  @Get(':id')
+
+  @Get('articles/:id')
   @Render('article')
-  getById(@Param('id', ParseIntPipe) id: number) {
-    return articles.find(article => article.id === id);
+  async getById(@Param('id', ParseIntPipe) id: number) {
+    const article = await Article.findOne({ id });
+    console.log(article);
+    return article;
   }
+
   @Get('create')
   @Render('create-article')
   getForm(): void {
@@ -25,9 +36,10 @@ export class AppController {
 
   @Post('articles')
   @Redirect('/', 301)
-  create(@Body() body: any): void {
-    const id = articles.length + 1;
-    const article = new Article(body.title, body.content, id);
-    articles.push(article);
+  async create(
+      @Body() body: { title: string; content: string },
+  ): Promise<void> {
+    const article = new Article(body.title, body.content);
+    await article.save();
   }
 }
